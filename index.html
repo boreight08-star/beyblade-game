@@ -136,6 +136,25 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .rsp-s{font-size:40px;font-weight:900;}
 .rsp-s.win{color:var(--yellow);}
 .search{margin:10px 16px 6px;padding:10px 14px;background:var(--card);border-radius:10px;border:none;font-size:15px;color:var(--text);width:calc(100% - 32px);outline:none;font-family:inherit;}
+/* 循環賽 standings */
+.st-card{margin:12px 16px 4px;background:var(--card);border-radius:var(--r);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+.st-head{display:flex;align-items:center;padding:10px 14px;background:var(--red-lt);border-bottom:1px solid var(--border);}
+.st-head-rank{width:28px;font-size:11px;font-weight:800;color:var(--text3);}
+.st-head-name{flex:1;font-size:11px;font-weight:800;color:var(--text3);}
+.st-head-w{width:44px;text-align:center;font-size:11px;font-weight:800;color:var(--text3);}
+.st-head-p{width:52px;text-align:right;font-size:11px;font-weight:800;color:var(--text3);}
+.st-row{display:flex;align-items:center;padding:11px 14px;border-top:1px solid var(--border);}
+.st-row:first-child{border-top:none;}
+.st-rank{width:28px;font-size:14px;font-weight:900;color:var(--text3);}
+.st-rank.top{color:var(--yellow);}
+.st-name{flex:1;font-size:14px;font-weight:700;}
+.st-wins{width:44px;text-align:center;font-size:14px;font-weight:800;color:var(--red);}
+.st-pts{width:52px;text-align:right;font-size:12px;color:var(--text2);}
+/* 賽制選擇 */
+.type-sel{display:flex;gap:8px;}
+.type-btn{flex:1;padding:11px 4px;border-radius:10px;border:2px solid var(--border);background:var(--bg);font-size:13px;font-weight:700;cursor:pointer;color:var(--text2);font-family:inherit;transition:all .15s;}
+.type-btn.on{border-color:var(--red);background:var(--red-lt);color:var(--red);}
+/* sync bar */
 #sync-bar{position:fixed;top:0;left:0;right:0;text-align:center;font-size:12px;font-weight:700;padding:6px;z-index:100;transition:all .3s;}
 #sync-bar.loading{background:#fff7ed;color:#c2410c;}
 #sync-bar.ok{background:#dcfce7;color:#15803d;}
@@ -154,33 +173,27 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
   <div id="main"><div class="empty"><div class="em-ic">☁️</div><div class="em-t">連線中...</div><div class="em-s">正在載入雲端資料</div></div></div>
   <button id="fab" class="fab" style="display:none" onclick="fabClick()">+</button>
   <nav id="tabs">
-    <button class="tab on" id="tab-players" onclick="switchTab('players')">
-      <span class="tab-ic">&#128101;</span>選手
-    </button>
-    <button class="tab" id="tab-tournaments" onclick="switchTab('tournaments')">
-      <span class="tab-ic">&#127942;</span>比賽
-    </button>
+    <button class="tab on" id="tab-players" onclick="switchTab('players')"><span class="tab-ic">&#128101;</span>選手</button>
+    <button class="tab" id="tab-tournaments" onclick="switchTab('tournaments')"><span class="tab-ic">&#127942;</span>比賽</button>
   </nav>
 </div>
-<div id="overlay" onclick="overlayTap(event)">
-  <div id="sheet"></div>
-</div>
+<div id="overlay" onclick="overlayTap(event)"><div id="sheet"></div></div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
-// ── Firebase 設定 ──
-var firebaseConfig = {
-  apiKey: "AIzaSyAOR4V5FpHVK6k4oqalPlr2VUSySTl0w8s",
-  authDomain: "beyblade-game-b3273.firebaseapp.com",
-  databaseURL: "https://beyblade-game-b3273-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "beyblade-game-b3273",
-  storageBucket: "beyblade-game-b3273.firebasestorage.app",
-  messagingSenderId: "55763672894",
-  appId: "1:55763672894:web:b00412b15f2c1147b2166f"
+// ── Firebase ──
+var firebaseConfig={
+  apiKey:"AIzaSyAOR4V5FpHVK6k4oqalPlr2VUSySTl0w8s",
+  authDomain:"beyblade-game-b3273.firebaseapp.com",
+  databaseURL:"https://beyblade-game-b3273-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"beyblade-game-b3273",
+  storageBucket:"beyblade-game-b3273.firebasestorage.app",
+  messagingSenderId:"55763672894",
+  appId:"1:55763672894:web:b00412b15f2c1147b2166f"
 };
 firebase.initializeApp(firebaseConfig);
-var db = firebase.database();
+var db=firebase.database();
 
 // ── FAB ──
 var _fabFn=null;
@@ -199,24 +212,37 @@ var REASONS=[
 
 // ── State ──
 var S={tab:'players',page:'list',pd:{},players:[],tournaments:[]};
-var CF={name:'',target:4,sel:new Set()};
+var CF={name:'',target:4,sel:new Set(),type:'elimination'};
 var CS={tId:null,mId:null,pName:'',pts:1,note:''};
 var _ready=false;
-var _saving=false;
 
 // ── Sync bar ──
-function showSync(state,msg){
-  var bar=document.getElementById('sync-bar');
-  bar.className=state;bar.textContent=msg;
-  if(state==='ok')setTimeout(function(){bar.className='hidden';},2000);
+function showSync(state,msg){var bar=document.getElementById('sync-bar');bar.className=state;bar.textContent=msg;if(state==='ok')setTimeout(function(){bar.className='hidden';},2000);}
+
+// ── Save ──
+function save(){
+  db.ref('/').set({players:S.players,tournaments:S.tournaments})
+    .then(function(){showSync('ok','☁️ 已同步');})
+    .catch(function(e){showSync('err','❌ 同步失敗');});
 }
 
-// ── Cloud save ──
-function save(){
-  _saving=true;
-  db.ref('/').set({players:S.players,tournaments:S.tournaments})
-    .then(function(){showSync('ok','☁️ 已同步');_saving=false;})
-    .catch(function(e){showSync('err','❌ 同步失敗：'+e.message);_saving=false;});
+// ── Firebase 正規化 ──
+function toArr(v){
+  if(!v)return[];
+  if(Array.isArray(v))return v;
+  return Object.keys(v).map(Number).sort(function(a,b){return a-b;}).map(function(k){return v[k];}).filter(function(x){return x!=null;});
+}
+function normData(data){
+  var players=toArr(data.players);
+  var tournaments=toArr(data.tournaments).map(function(t){
+    if(!t)return null;
+    var matches=toArr(t.matches).map(function(m){
+      if(!m)return null;
+      return Object.assign({},m,{scores:toArr(m.scores)});
+    }).filter(Boolean);
+    return Object.assign({},t,{matches:matches});
+  }).filter(Boolean);
+  return{players:players,tournaments:tournaments};
 }
 
 // ── Utils ──
@@ -238,18 +264,48 @@ function addPlayer(name,bday){S.players.push({id:uid(),name:name.trim(),birthday
 function editPlayer(id,name,bday){var p=S.players.find(function(p){return p.id===id;});if(p){p.name=name.trim();p.birthday=bday;save();render();}}
 function delPlayer(id){if(!confirm('確定刪除此選手？'))return;S.players=S.players.filter(function(p){return p.id!==id;});save();closeModal();render();}
 
-// ── Scoring ──
+// ── Score helpers ──
 function pScore(m,name){return m.scores.filter(function(s){return s.p===name;}).reduce(function(n,s){return n+s.pts;},0);}
 
-// ── Tournament ──
-function createTournament(name,names,target){
+// ── 循環賽積分榜 ──
+function calcStandings(t){
+  var map={};
+  t.participants.forEach(function(n){map[n]={name:n,wins:0,losses:0,pts:0,played:0};});
+  t.matches.forEach(function(m){
+    if(m.status==='completed'&&m.winner){
+      map[m.p1].played++;if(m.p2)map[m.p2].played++;
+      map[m.winner].wins++;
+      var loser=m.winner===m.p1?m.p2:m.p1;
+      if(loser&&map[loser])map[loser].losses++;
+    }
+    if(map[m.p1])map[m.p1].pts+=pScore(m,m.p1);
+    if(m.p2&&map[m.p2])map[m.p2].pts+=pScore(m,m.p2);
+  });
+  return Object.values(map).sort(function(a,b){return b.wins!==a.wins?b.wins-a.wins:b.pts-a.pts;});
+}
+
+// ── Create Tournament ──
+function createTournament(name,names,target,type){
+  type=type||'elimination';
   var arr=shuffle(names.slice());
-  var t={id:uid(),name:name,createdAt:new Date().toISOString(),status:'ongoing',participants:names.slice(),target:target,matches:[],seed:null,winner:null};
-  if(arr.length%2!==0){var s=arr.shift();t.seed=s;t.matches.push({id:uid(),p1:s,p2:null,round:1,num:0,status:'bye',winner:s,scores:[]});}
+  var t={id:uid(),name:name,createdAt:new Date().toISOString(),status:'ongoing',
+         participants:names.slice(),target:target,type:type,matches:[],seed:null,winner:null};
   var n=0;
-  while(arr.length>=2){n++;var p1=arr.shift(),p2=arr.shift();t.matches.push({id:uid(),p1:p1,p2:p2,round:1,num:n,status:'pending',winner:null,scores:[]});}
+  if(type==='roundrobin'){
+    for(var i=0;i<arr.length;i++){
+      for(var j=i+1;j<arr.length;j++){
+        n++;
+        t.matches.push({id:uid(),p1:arr[i],p2:arr[j],round:1,num:n,status:'pending',winner:null,scores:[]});
+      }
+    }
+  } else {
+    if(arr.length%2!==0){var s=arr.shift();t.seed=s;t.matches.push({id:uid(),p1:s,p2:null,round:1,num:0,status:'bye',winner:s,scores:[]});}
+    while(arr.length>=2){n++;var p1=arr.shift(),p2=arr.shift();t.matches.push({id:uid(),p1:p1,p2:p2,round:1,num:n,status:'pending',winner:null,scores:[]});}
+  }
   S.tournaments.push(t);save();return t.id;
 }
+
+// ── Match scoring ──
 function addScore(tId,mId,pName,reasonId,pts,note){
   note=note||'';
   var t=S.tournaments.find(function(t){return t.id===tId;});
@@ -260,6 +316,11 @@ function addScore(tId,mId,pName,reasonId,pts,note){
   var s1=pScore(m,m.p1),s2=m.p2?pScore(m,m.p2):0;
   if(s1>=t.target){m.winner=m.p1;m.status='completed';}
   else if(m.p2&&s2>=t.target){m.winner=m.p2;m.status='completed';}
+  // 循環賽：全部比完自動決定冠軍
+  if(t.type==='roundrobin'&&m.status==='completed'){
+    var allDone=t.matches.every(function(x){return x.status==='completed';});
+    if(allDone){var st=calcStandings(t);t.winner=st[0].name;t.status='completed';}
+  }
   save();renderMatchContent();
 }
 function undoScore(tId,mId){
@@ -268,9 +329,12 @@ function undoScore(tId,mId){
   if(!m||!m.scores.length)return;
   m.scores.sort(function(a,b){return new Date(a.time)-new Date(b.time);});
   m.scores.pop();m.winner=null;
-  if(m.status==='completed')m.status=m.scores.length?'ongoing':'pending';
+  if(m.status==='completed'){m.status=m.scores.length?'ongoing':'pending';}
+  if(t.status==='completed'){t.status='ongoing';t.winner=null;}
   save();renderMatchContent();
 }
+
+// ── Elimination helpers ──
 function curRound(t){var active=t.matches.filter(function(m){return m.status==='pending'||m.status==='ongoing';});if(!active.length)return Math.max.apply(null,[0].concat(t.matches.map(function(m){return m.round;})));return Math.min.apply(null,active.map(function(m){return m.round;}));}
 function roundDone(t){var r=curRound(t);return t.matches.filter(function(m){return m.round===r;}).every(function(m){return m.status==='completed'||m.status==='bye';});}
 function byRound(t){var max=Math.max.apply(null,[0].concat(t.matches.map(function(m){return m.round;})));var res={};for(var r=1;r<=max;r++){res[r]=t.matches.filter(function(m){return m.round===r;}).sort(function(a,b){return a.num-b.num;});}return res;}
@@ -304,6 +368,8 @@ function render(){
   else if(S.page==='detail')renderTDetail(main);
   else if(S.page==='match'){main.innerHTML='<div id="mc"></div>';renderMatchContent();}
 }
+
+// ── Players list ──
 function renderPlayers(main){
   setFab(openPForm);
   if(!S.players.length){main.innerHTML='<div class="empty"><div class="em-ic">👥</div><div class="em-t">尚未新增選手</div><div class="em-s">點右下角 + 開始新增</div></div>';return;}
@@ -314,14 +380,74 @@ function renderPItems(ps){
   if(!ps.length)return'<div style="text-align:center;padding:20px;color:var(--text3)">找不到選手</div>';
   return ps.map(function(p){return'<div class="card"><div class="crow" data-pid="'+esc(p.id)+'" onclick="openPForm(this.dataset.pid)"><div class="av">'+esc(p.name[0])+'</div><div style="flex:1"><div class="t-h">'+esc(p.name)+'</div><div class="t-s">'+fmtD(p.birthday)+'</div></div><div class="t-s">'+calcAge(p.birthday)+' 歲</div><div class="chevron">&rsaquo;</div></div></div>';}).join('');
 }
+
+// ── Tournament list ──
 function renderTList(main){
   setFab(openCT);
   if(!S.tournaments.length){main.innerHTML='<div class="empty"><div class="em-ic">🏆</div><div class="em-t">尚未建立比賽</div><div class="em-s">點右下角 + 開始建立</div></div>';return;}
   var sorted=S.tournaments.slice().sort(function(a,b){return new Date(b.createdAt)-new Date(a.createdAt);});
-  main.innerHTML='<div class="cl">'+sorted.map(function(t){var bText=t.status==='upcoming'?'未開始':t.status==='ongoing'?'進行中':'已結束';return'<div class="card"><div class="crow" data-tid="'+esc(t.id)+'" onclick="nav(\'detail\',{tId:this.dataset.tid})"><div class="av">🏟</div><div style="flex:1"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span class="t-h">'+esc(t.name)+'</span><span class="badge badge-'+t.status+'">'+bText+'</span></div><div class="t-s">'+t.participants.length+' 位選手'+(t.winner?' · 🏆 '+esc(t.winner):'')+'</div><div class="t-xs">'+fmtDT(t.createdAt)+'</div></div><div class="chevron">&rsaquo;</div></div></div>';}).join('')+'</div>';
+  main.innerHTML='<div class="cl">'+sorted.map(function(t){
+    var bText=t.status==='ongoing'?'進行中':'已結束';
+    var typeLabel=t.type==='roundrobin'?'循環賽':'淘汰賽';
+    return'<div class="card"><div class="crow" data-tid="'+esc(t.id)+'" onclick="nav(\'detail\',{tId:this.dataset.tid})">'+
+      '<div class="av">🏟</div>'+
+      '<div style="flex:1">'+
+        '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+
+          '<span class="t-h">'+esc(t.name)+'</span>'+
+          '<span class="badge badge-'+t.status+'">'+bText+'</span>'+
+          '<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;background:#f3e8ff;color:#7c3aed">'+typeLabel+'</span>'+
+        '</div>'+
+        '<div class="t-s">'+t.participants.length+' 位選手'+(t.winner?' · 🏆 '+esc(t.winner):'')+'</div>'+
+        '<div class="t-xs">'+fmtDT(t.createdAt)+'</div>'+
+      '</div>'+
+      '<div class="chevron">&rsaquo;</div></div></div>';
+  }).join('')+'</div>';
 }
+
+// ── Tournament detail ──
 function renderTDetail(main){
-  var t=S.tournaments.find(function(t){return t.id===S.pd.tId;});if(!t){nav('list');return;}
+  var t=S.tournaments.find(function(t){return t.id===S.pd.tId;});
+  if(!t){nav('list');return;}
+  if(t.type==='roundrobin') renderRRDetail(main,t);
+  else renderElimDetail(main,t);
+}
+
+// ── 循環賽 Detail ──
+function renderRRDetail(main,t){
+  var standings=calcStandings(t);
+  var allDone=t.matches.every(function(m){return m.status==='completed';});
+  var html='<div>';
+  // 冠軍 banner
+  if(t.winner){
+    html+='<div class="w-banner"><div style="font-size:40px">👑</div><div style="font-size:13px;color:var(--yellow);font-weight:700;margin-top:2px">🏆 冠軍</div><div style="font-size:28px;font-weight:900;margin-top:4px">'+esc(t.winner)+'</div></div>';
+  }
+  // 積分榜
+  html+='<div class="rnd-hdr"><span class="rnd-title">📊 積分榜</span></div>';
+  html+='<div class="st-card">'+
+    '<div class="st-head"><div class="st-head-rank">#</div><div class="st-head-name">選手</div><div class="st-head-w">勝場</div><div class="st-head-p">得分</div></div>';
+  standings.forEach(function(s,i){
+    var medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':''+(i+1);
+    html+='<div class="st-row"><div class="st-rank'+(i<3?' top':'')+'">'+medal+'</div><div class="st-name">'+esc(s.name)+'</div><div class="st-wins">'+s.wins+'</div><div class="st-pts">'+s.pts+' 分</div></div>';
+  });
+  html+='</div>';
+  // 對戰列表
+  var doneCount=t.matches.filter(function(m){return m.status==='completed';}).length;
+  html+='<div class="rnd-hdr"><span class="rnd-title">全部對戰</span><span class="rnd-badge" style="background:'+(allDone?'#dcfce7':'#fff7ed')+';color:'+(allDone?'#15803d':'#c2410c')+'">'+doneCount+'/'+t.matches.length+' 完成</span></div>';
+  t.matches.slice().sort(function(a,b){return a.num-b.num;}).forEach(function(m){
+    var s1=pScore(m,m.p1),s2=pScore(m,m.p2||'');
+    var cls=m.status==='ongoing'?'ongoing':m.status==='completed'?'completed':'';
+    html+='<div class="mc '+cls+'" data-tid="'+esc(t.id)+'" data-mid="'+esc(m.id)+'" onclick="nav(\'match\',{tId:this.dataset.tid,mId:this.dataset.mid})">'+
+      mcCell(m.p1,s1,m.winner===m.p1,t.target)+
+      '<div class="mc-div">'+(m.status==='completed'?'<span style="font-size:18px">✅</span>':m.status==='ongoing'?'<span style="font-size:18px">▶️</span>':'<span class="vs">VS</span>')+'</div>'+
+      mcCell(m.p2||'',s2,m.winner===m.p2,t.target)+
+      '</div>';
+  });
+  html+='<div style="text-align:center;padding:16px 16px 32px"><button class="btn-ghost" data-tid="'+esc(t.id)+'" onclick="delTournament(this.dataset.tid)">🗑 刪除此比賽</button></div></div>';
+  main.innerHTML=html;
+}
+
+// ── 淘汰賽 Detail ──
+function renderElimDetail(main,t){
   var rounds=byRound(t),rNums=Object.keys(rounds).map(Number).sort(function(a,b){return a-b;}),total=rNums.length;
   var html='<div>';
   if(t.winner)html+='<div class="w-banner"><div style="font-size:40px">👑</div><div style="font-size:13px;color:var(--yellow);font-weight:700;margin-top:2px">🏆 冠軍</div><div style="font-size:28px;font-weight:900;margin-top:4px">'+esc(t.winner)+'</div></div>';
@@ -339,10 +465,13 @@ function renderTDetail(main){
   html+='<div style="text-align:center;padding:16px 16px 32px"><button class="btn-ghost" data-tid="'+esc(t.id)+'" onclick="delTournament(this.dataset.tid)">🗑 刪除此比賽</button></div></div>';
   main.innerHTML=html;
 }
+
 function mcCell(name,score,isWin,target){
   var dots='';for(var i=0;i<target;i++)dots+='<div class="mc-dot'+(i<score?' on':'')+'"></div>';
   return'<div class="mc-p"><div class="mc-name">'+esc(name)+'</div><div class="mc-score'+(isWin?' win':'')+'">'+score+'</div><div class="mc-dots">'+dots+'</div></div>';
 }
+
+// ── Match content ──
 function renderMatchContent(){
   var tId=S.pd.tId,mId=S.pd.mId;
   var t=S.tournaments.find(function(t){return t.id===tId;});
@@ -363,7 +492,7 @@ function renderMatchContent(){
 function handleScore(tId,mId,pName,rId,defPts){if(rId==='custom')openCS(tId,mId,pName);else addScore(tId,mId,pName,rId,defPts,'');}
 function hsBtnClick(el){var r=REASONS.find(function(r){return r.id===el.dataset.r;});if(r)handleScore(S.pd.tId,S.pd.mId,el.dataset.p,r.id,r.pts);}
 
-// ── Forms ──
+// ── Player form ──
 function openPForm(pid){
   pid=pid||null;if(pid==='')pid=null;
   var p=pid?S.players.find(function(p){return p.id===pid;}):null;
@@ -379,19 +508,41 @@ function savePForm(pid){
   var bday=document.getElementById('pf-b').value;
   if(!name){alert('請輸入選手姓名');return;}
   if(!bday){alert('請選擇生日');return;}
-  if(pid)editPlayer(pid,name,bday);else addPlayer(name,bday);
-  closeModal();
+  if(pid)editPlayer(pid,name,bday);else addPlayer(name,bday);closeModal();
 }
-function openCT(){CF={name:'',target:4,sel:new Set()};renderCTSheet();showModal();}
+
+// ── Create tournament sheet ──
+function openCT(){CF={name:'',target:4,sel:new Set(),type:'elimination'};renderCTSheet();showModal();}
 function renderCTSheet(){
   var ps=S.players,can=CF.sel.size>=2&&CF.name.trim().length>0;
-  var selHtml=!ps.length?'<div style="padding:16px;text-align:center;color:var(--text3)">請先新增選手</div>':'<div class="card">'+ps.map(function(p){return'<div class="psr" data-n="'+esc(p.name)+'" onclick="togSel(this.dataset.n)"><div class="psr-chk'+(CF.sel.has(p.name)?' on':'')+'"></div><div style="flex:1"><div class="t-h">'+esc(p.name)+'</div><div class="t-s">'+fmtD(p.birthday)+'</div></div></div>';}).join('')+'</div>';
-  document.getElementById('sheet').innerHTML='<div class="sh-handle"></div><div class="sh-hdr"><button class="sh-cancel" onclick="closeModal()">取消</button><span class="sh-title">建立比賽</span><button class="sh-ok" id="ct-ok" onclick="submitCT()" '+(can?'':'disabled')+'>建立</button></div><div class="f-sec"><div class="f-lbl">比賽名稱</div><input class="f-inp" id="ct-n" placeholder="例如：2025春季聯賽" value="'+esc(CF.name)+'" oninput="CF.name=this.value;updateCTOk()" autocomplete="off"></div><div class="f-sec"><div class="f-lbl">先攻得幾分獲勝</div><div class="stepper"><button class="stp-btn" onclick="chgTarget(-1)" '+(CF.target<=1?'disabled':'')+'>−</button><div class="stp-val">'+CF.target+' 分</div><button class="stp-btn" onclick="chgTarget(1)" '+(CF.target>=10?'disabled':'')+'>＋</button></div></div><div class="f-sec"><div class="f-lbl">參賽選手 '+(CF.sel.size>0?'<span style="color:var(--red);font-weight:700">(已選'+CF.sel.size+'人)</span>':'')+'</div>'+selHtml+'</div>'+(CF.sel.size>=2&&CF.sel.size%2!==0?'<div class="infobox">ℹ️ <span>人數為奇數（'+CF.sel.size+'人），一位種子選手第一輪輪空</span></div>':'')+'<div style="height:20px"></div>';
+  var selHtml=!ps.length?'<div style="padding:16px;text-align:center;color:var(--text3)">請先新增選手</div>':
+    '<div class="card">'+ps.map(function(p){return'<div class="psr" data-n="'+esc(p.name)+'" onclick="togSel(this.dataset.n)"><div class="psr-chk'+(CF.sel.has(p.name)?' on':'')+'"></div><div style="flex:1"><div class="t-h">'+esc(p.name)+'</div><div class="t-s">'+fmtD(p.birthday)+'</div></div></div>';}).join('')+'</div>';
+  var matchCount=CF.type==='roundrobin'&&CF.sel.size>=2?CF.sel.size*(CF.sel.size-1)/2:0;
+  document.getElementById('sheet').innerHTML=
+    '<div class="sh-handle"></div>'+
+    '<div class="sh-hdr"><button class="sh-cancel" onclick="closeModal()">取消</button><span class="sh-title">建立比賽</span><button class="sh-ok" id="ct-ok" onclick="submitCT()" '+(can?'':'disabled')+'>建立</button></div>'+
+    '<div class="f-sec"><div class="f-lbl">比賽名稱</div><input class="f-inp" id="ct-n" placeholder="例如：2025春季聯賽" value="'+esc(CF.name)+'" oninput="CF.name=this.value;updateCTOk()" autocomplete="off"></div>'+
+    '<div class="f-sec"><div class="f-lbl">賽制</div><div class="type-sel">'+
+      '<button class="type-btn'+(CF.type==='elimination'?' on':'')+'" onclick="setType(\'elimination\')">🏆 淘汰賽</button>'+
+      '<button class="type-btn'+(CF.type==='roundrobin'?' on':'')+'" onclick="setType(\'roundrobin\')">🔄 循環賽</button>'+
+    '</div></div>'+
+    '<div class="f-sec"><div class="f-lbl">先攻得幾分獲勝</div><div class="stepper"><button class="stp-btn" onclick="chgTarget(-1)" '+(CF.target<=1?'disabled':'')+'>−</button><div class="stp-val">'+CF.target+' 分</div><button class="stp-btn" onclick="chgTarget(1)" '+(CF.target>=10?'disabled':'')+'>＋</button></div></div>'+
+    '<div class="f-sec"><div class="f-lbl">參賽選手 '+(CF.sel.size>0?'<span style="color:var(--red);font-weight:700">(已選'+CF.sel.size+'人)</span>':'')+'</div>'+selHtml+'</div>'+
+    (CF.type==='roundrobin'&&CF.sel.size>=2?'<div class="infobox">🔄 <span>循環賽：每位選手都會互相對戰，共 '+matchCount+' 場，最終積分最多者獲勝</span></div>':'')+
+    (CF.type==='elimination'&&CF.sel.size>=2&&CF.sel.size%2!==0?'<div class="infobox">ℹ️ <span>人數為奇數（'+CF.sel.size+'人），一位種子選手第一輪輪空</span></div>':'')+
+    '<div style="height:20px"></div>';
 }
+function setType(type){CF.type=type;renderCTSheet();}
 function updateCTOk(){var ok=document.getElementById('ct-ok');if(ok)ok.disabled=!(CF.sel.size>=2&&CF.name.trim().length>0);}
 function chgTarget(d){CF.target=Math.min(10,Math.max(1,CF.target+d));renderCTSheet();}
 function togSel(name){if(CF.sel.has(name))CF.sel.delete(name);else CF.sel.add(name);renderCTSheet();}
-function submitCT(){if(CF.sel.size<2){alert('請選擇至少 2 位選手');return;}var tId=createTournament(CF.name.trim()||'新比賽',Array.from(CF.sel),CF.target);closeModal();nav('detail',{tId:tId});}
+function submitCT(){
+  if(CF.sel.size<2){alert('請選擇至少 2 位選手');return;}
+  var tId=createTournament(CF.name.trim()||'新比賽',Array.from(CF.sel),CF.target,CF.type);
+  closeModal();nav('detail',{tId:tId});
+}
+
+// ── Custom score ──
 function openCS(tId,mId,pName){
   CS={tId:tId,mId:mId,pName:pName,pts:1,note:''};
   document.getElementById('sheet').innerHTML='<div class="sh-handle"></div><div class="sh-hdr"><button class="sh-cancel" onclick="closeModal()">取消</button><span class="sh-title">自訂得分</span><button class="sh-ok" onclick="submitCS()">確認</button></div><div style="padding:0 18px 12px;font-size:14px;color:var(--text2)">為 <strong>'+esc(pName)+'</strong> 新增自訂得分</div><div class="f-sec"><div class="f-lbl">說明</div><input class="f-inp" id="cs-n" placeholder="例如：裁判加分" oninput="CS.note=this.value" autocomplete="off"></div><div class="f-sec"><div class="f-lbl">分數</div><div class="stepper"><button class="stp-btn" id="cs-m" onclick="chgCS(-1)" disabled>−</button><div class="stp-val" id="cs-v">+ 1 分</div><button class="stp-btn" id="cs-p" onclick="chgCS(1)">＋</button></div></div><div style="height:20px"></div>';
@@ -405,42 +556,15 @@ function showModal(){var o=document.getElementById('overlay');o.style.display='f
 function closeModal(){var o=document.getElementById('overlay');o.classList.remove('on');setTimeout(function(){o.style.display='none';},200);}
 function overlayTap(e){if(e.target===document.getElementById('overlay'))closeModal();}
 
-// ── Firebase 資料正規化（修正空陣列問題）──
-function toArr(v){
-  if(!v)return[];
-  if(Array.isArray(v))return v;
-  return Object.keys(v).map(Number).sort(function(a,b){return a-b;}).map(function(k){return v[k];}).filter(function(x){return x!=null;});
-}
-function normData(data){
-  var players=toArr(data.players);
-  var tournaments=toArr(data.tournaments).map(function(t){
-    if(!t)return null;
-    var matches=toArr(t.matches).map(function(m){
-      if(!m)return null;
-      return Object.assign({},m,{scores:toArr(m.scores)});
-    }).filter(Boolean);
-    return Object.assign({},t,{matches:matches});
-  }).filter(Boolean);
-  return{players:players,tournaments:tournaments};
-}
-
-// ── Boot：連接 Firebase 即時同步 ──
+// ── Boot ──
 showSync('loading','⏳ 連線中...');
-db.ref('/').on('value', function(snapshot){
+db.ref('/').on('value',function(snapshot){
   var raw=snapshot.val()||{};
   var data=normData(raw);
-  S.players=data.players;
-  S.tournaments=data.tournaments;
-  if(!_ready){
-    _ready=true;
-    showSync('ok','☁️ 已連線');
-    switchTab('players');
-  } else {
-    render();
-  }
-}, function(err){
-  showSync('err','❌ 連線失敗，請重新整理');
-});
+  S.players=data.players;S.tournaments=data.tournaments;
+  if(!_ready){_ready=true;showSync('ok','☁️ 已連線');switchTab('players');}
+  else{render();}
+},function(){showSync('err','❌ 連線失敗，請重新整理');});
 </script>
 </body>
 </html>
