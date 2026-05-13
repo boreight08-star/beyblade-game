@@ -405,12 +405,32 @@ function showModal(){var o=document.getElementById('overlay');o.style.display='f
 function closeModal(){var o=document.getElementById('overlay');o.classList.remove('on');setTimeout(function(){o.style.display='none';},200);}
 function overlayTap(e){if(e.target===document.getElementById('overlay'))closeModal();}
 
+// ── Firebase 資料正規化（修正空陣列問題）──
+function toArr(v){
+  if(!v)return[];
+  if(Array.isArray(v))return v;
+  return Object.keys(v).map(Number).sort(function(a,b){return a-b;}).map(function(k){return v[k];}).filter(function(x){return x!=null;});
+}
+function normData(data){
+  var players=toArr(data.players);
+  var tournaments=toArr(data.tournaments).map(function(t){
+    if(!t)return null;
+    var matches=toArr(t.matches).map(function(m){
+      if(!m)return null;
+      return Object.assign({},m,{scores:toArr(m.scores)});
+    }).filter(Boolean);
+    return Object.assign({},t,{matches:matches});
+  }).filter(Boolean);
+  return{players:players,tournaments:tournaments};
+}
+
 // ── Boot：連接 Firebase 即時同步 ──
 showSync('loading','⏳ 連線中...');
 db.ref('/').on('value', function(snapshot){
-  var data=snapshot.val()||{};
-  S.players=data.players||[];
-  S.tournaments=data.tournaments||[];
+  var raw=snapshot.val()||{};
+  var data=normData(raw);
+  S.players=data.players;
+  S.tournaments=data.tournaments;
   if(!_ready){
     _ready=true;
     showSync('ok','☁️ 已連線');
