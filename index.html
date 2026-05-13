@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="陀螺賽事">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#e11d48">
+<title>戰鬥陀螺賽事管理</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --red:#e11d48;--red-lt:#fff1f2;
+  --green:#16a34a;--blue:#2563eb;--orange:#ea580c;--purple:#7c3aed;--yellow:#ca8a04;
+  --bg:#f2f2f7;--card:#fff;--text:#1c1c1e;--text2:#636366;--text3:#aeaeb2;
+  --border:rgba(0,0,0,0.09);
+  --tab-h:calc(54px + env(safe-area-inset-bottom,0px));
+  --hdr-h:calc(56px + env(safe-area-inset-top,0px));
+  --r:14px;
+}
+html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);}
+#app{display:flex;flex-direction:column;height:100vh;max-width:500px;margin:0 auto;background:var(--bg);}
+#hdr{height:var(--hdr-h);background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:flex-end;justify-content:space-between;padding:0 16px 12px;position:sticky;top:0;z-index:20;padding-top:env(safe-area-inset-top,0);}
+#hdr-back{background:none;border:none;font-size:17px;color:var(--red);cursor:pointer;padding:4px 0;min-width:64px;}
+#hdr-title{font-size:17px;font-weight:700;text-align:center;flex:1;}
+#hdr-right{background:none;border:none;font-size:15px;color:var(--red);cursor:pointer;padding:4px 0;min-width:64px;text-align:right;}
+#main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px;}
+#tabs{height:var(--tab-h);background:var(--card);border-top:1px solid var(--border);display:flex;padding-bottom:env(safe-area-inset-bottom,0);}
+.tab{flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--text3);font-size:10px;font-weight:600;padding:6px 0 4px;}
+.tab.on{color:var(--red);}
+.tab-ic{font-size:24px;line-height:1;}
+.fab{position:fixed;bottom:calc(var(--tab-h) + 16px);right:20px;width:56px;height:56px;border-radius:28px;background:var(--red);color:#fff;border:none;font-size:30px;cursor:pointer;box-shadow:0 4px 18px rgba(225,29,72,.45);display:flex;align-items:center;justify-content:center;z-index:30;transition:transform .1s;}
+.fab:active{transform:scale(.93);}
+.card{background:var(--card);border-radius:var(--r);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+.cl{padding:0 16px;display:flex;flex-direction:column;gap:8px;padding-bottom:8px;}
+.crow{display:flex;align-items:center;padding:13px 16px;gap:12px;cursor:pointer;min-height:60px;transition:background .1s;}
+.crow:active{background:var(--bg);}
+.crow+.crow{border-top:1px solid var(--border);}
+.av{width:44px;height:44px;border-radius:22px;background:var(--red-lt);color:var(--red);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;flex-shrink:0;}
+.t-h{font-size:16px;font-weight:700;}
+.t-s{font-size:13px;color:var(--text2);margin-top:2px;}
+.t-xs{font-size:11px;color:var(--text3);margin-top:2px;}
+.chevron{color:var(--text3);font-size:18px;margin-left:4px;}
+.badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;}
+.badge-upcoming{background:#dbeafe;color:#1e40af;}
+.badge-ongoing{background:#fff7ed;color:#c2410c;}
+.badge-completed{background:#dcfce7;color:#15803d;}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:70px 24px;text-align:center;}
+.em-ic{font-size:68px;opacity:.25;}
+.em-t{font-size:18px;font-weight:700;color:var(--text2);}
+.em-s{font-size:14px;color:var(--text3);}
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:none;align-items:flex-end;}
+#overlay.on{display:flex;}
+#sheet{background:var(--card);border-radius:20px 20px 0 0;width:100%;max-height:92vh;overflow-y:auto;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 8px);}
+.sh-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:10px auto 0;}
+.sh-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;}
+.sh-title{font-size:17px;font-weight:700;}
+.sh-cancel{font-size:15px;color:var(--text2);background:none;border:none;cursor:pointer;padding:4px;font-family:inherit;}
+.sh-ok{font-size:15px;color:var(--red);font-weight:700;background:none;border:none;cursor:pointer;padding:4px;font-family:inherit;}
+.sh-ok:disabled{opacity:.35;}
+.f-sec{margin:0 16px 14px;}
+.f-lbl{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;}
+.f-inp{width:100%;padding:13px 14px;border-radius:10px;border:none;background:var(--bg);font-size:16px;color:var(--text);outline:none;font-family:inherit;}
+.f-inp:focus{background:#eaeaf0;}
+.stepper{display:flex;align-items:center;background:var(--bg);border-radius:10px;overflow:hidden;}
+.stp-btn{width:48px;height:46px;border:none;background:none;font-size:24px;color:var(--red);cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;}
+.stp-btn:disabled{color:var(--text3);}
+.stp-val{flex:1;text-align:center;font-size:17px;font-weight:700;}
+.psr{display:flex;align-items:center;padding:12px 16px;gap:12px;cursor:pointer;}
+.psr:active{background:var(--bg);}
+.psr+.psr{border-top:1px solid var(--border);}
+.psr-chk{width:24px;height:24px;border-radius:12px;border:2px solid var(--text3);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.psr-chk.on{background:var(--red);border-color:var(--red);}
+.psr-chk.on::after{content:'checkmark';color:#fff;font-size:14px;font-weight:800;}
+.btn-p{width:calc(100% - 32px);margin:0 16px;padding:15px;border-radius:var(--r);background:var(--red);color:#fff;border:none;font-size:17px;font-weight:700;cursor:pointer;transition:opacity .1s;font-family:inherit;}
+.btn-p:disabled{opacity:.35;}
+.btn-p:active{opacity:.8;}
+.btn-ghost{background:none;border:none;color:var(--red);font-size:14px;cursor:pointer;padding:4px 8px;font-family:inherit;}
+.infobox{margin:0 16px 12px;padding:10px 14px;background:#eff6ff;border-radius:10px;font-size:13px;color:#1d4ed8;display:flex;gap:8px;align-items:flex-start;}
+.rnd-hdr{display:flex;justify-content:space-between;align-items:center;padding:16px 16px 8px;}
+.rnd-title{font-size:18px;font-weight:800;}
+.rnd-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;}
+.mc{background:var(--card);border-radius:var(--r);margin:0 16px 8px;padding:12px 14px;display:flex;align-items:center;box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer;transition:transform .1s;}
+.mc:active{transform:scale(.98);}
+.mc.ongoing{border:2px solid var(--orange);}
+.mc.completed{border:2px solid rgba(22,163,74,.3);}
+.mc.bye{cursor:default;opacity:.65;}
+.mc-p{flex:1;text-align:center;}
+.mc-name{font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.mc-score{font-size:38px;font-weight:900;line-height:1.1;}
+.mc-score.win{color:var(--yellow);}
+.mc-dots{display:flex;gap:3px;justify-content:center;margin-top:3px;}
+.mc-dot{width:6px;height:6px;border-radius:3px;background:var(--border);}
+.mc-dot.on{background:var(--red);}
+.mc-div{width:44px;text-align:center;flex-shrink:0;}
+.vs{font-size:11px;font-weight:800;color:var(--text3);}
+.w-banner{margin:16px;padding:22px 20px;border-radius:var(--r);background:linear-gradient(135deg,#fef9c3,#fde68a);border:1.5px solid rgba(202,138,4,.3);text-align:center;}
+.adv-btn{display:flex;align-items:center;justify-content:center;gap:8px;margin:4px 16px 8px;padding:15px;background:var(--red);color:#fff;border:none;border-radius:var(--r);font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(225,29,72,.3);font-family:inherit;}
+.adv-btn:active{opacity:.85;}
+.ssh{background:var(--card);padding:16px 14px;display:flex;align-items:center;border-bottom:1px solid var(--border);}
+.ssh-p{flex:1;text-align:center;}
+.ssh-name{font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ssh-score{font-size:54px;font-weight:900;line-height:1;}
+.ssh-score.win{color:var(--yellow);}
+.ssh-mid{text-align:center;width:44px;}
+.ssh-tl{font-size:10px;color:var(--text3);}
+.ssh-tv{font-size:16px;font-weight:800;color:var(--text2);}
+.scols{display:flex;gap:8px;padding:14px 12px 4px;}
+.scol{flex:1;display:flex;flex-direction:column;gap:5px;}
+.scol-name{text-align:center;font-size:12px;font-weight:800;padding:7px 4px;background:rgba(225,29,72,.08);border-radius:8px;color:var(--red);}
+.sbtn{width:100%;border:none;border-radius:10px;cursor:pointer;padding:9px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;transition:transform .1s;font-family:inherit;}
+.sbtn:active{transform:scale(.91);}
+.sb-em{font-size:20px;}
+.sb-nm{font-size:10px;font-weight:800;line-height:1.2;text-align:center;}
+.sb-pt{font-size:10px;opacity:.7;}
+.s-survivor{background:rgba(22,163,74,.12);color:#15803d;}
+.s-over{background:rgba(37,99,235,.12);color:#1d4ed8;}
+.s-burst{background:rgba(234,88,12,.12);color:#c2410c;}
+.s-xtreme{background:rgba(225,29,72,.12);color:#be123c;}
+.s-custom{background:rgba(124,58,237,.12);color:#6d28d9;}
+.hist-sec{padding:0 12px 24px;}
+.hist-t{font-size:13px;font-weight:700;color:var(--text2);padding:10px 4px 8px;}
+.hi{display:flex;align-items:center;gap:9px;padding:9px 12px;background:var(--card);border-radius:10px;margin-bottom:5px;}
+.hi-em{font-size:19px;}
+.hi-inf{flex:1;}
+.hi-pl{font-size:14px;font-weight:700;}
+.hi-re{font-size:12px;color:var(--text2);}
+.hi-pt{font-size:15px;font-weight:800;color:var(--green);}
+.result{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px 24px;gap:14px;text-align:center;min-height:65vh;}
+.r-win{font-size:30px;font-weight:900;}
+.r-scores{display:flex;align-items:center;gap:24px;margin:4px 0;}
+.rsp{text-align:center;}
+.rsp-n{font-size:13px;color:var(--text2);}
+.rsp-s{font-size:40px;font-weight:900;}
+.rsp-s.win{color:var(--yellow);}
+.search{margin:10px 16px 6px;padding:10px 14px;background:var(--card);border-radius:10px;border:none;font-size:15px;color:var(--text);width:calc(100% - 32px);outline:none;font-family:inherit;}
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="hdr">
+    <button id="hdr-back" onclick="goBack()" style="visibility:hidden">&#8249; 返回</button>
+    <span id="hdr-title">&#9876; 陀螺賽事</span>
+    <button id="hdr-right" onclick="hdrAction()" style="visibility:hidden"></button>
+  </header>
+  <div id="main"></div>
+  <button id="fab" class="fab" style="display:none" onclick="fabClick()">+</button>
+  <nav id="tabs">
+    <button class="tab on" id="tab-players" onclick="switchTab('players')">
+      <span class="tab-ic">&#128101;</span>選手
+    </button>
+    <button class="tab" id="tab-tournaments" onclick="switchTab('tournaments')">
+      <span class="tab-ic">&#127942;</span>比賽
+    </button>
+  </nav>
+</div>
+<div id="overlay" onclick="overlayTap(event)">
+  <div id="sheet"></div>
+</div>
+<script>
+// FAB
+var _fabFn=null;
+function setFab(fn){_fabFn=fn;document.getElementById('fab').style.display='flex';}
+function hideFab(){_fabFn=null;document.getElementById('fab').style.display='none';}
+function fabClick(){if(_fabFn)_fabFn();}
+
+// Score reasons
+var REASONS=[
+  {id:'survivor',name:'停轉勝',   emoji:'✅',pts:1,cls:'s-survivor',desc:'對手停轉'},
+  {id:'over',    name:'出界勝', emoji:'🔵',pts:2,cls:'s-over',   desc:'對手出界'},
+  {id:'burst',   name:'爆裂勝', emoji:'💥',pts:2,cls:'s-burst',  desc:'對手爆裂'},
+  {id:'xtreme',  name:'極限出界',emoji:'⚡',pts:3,cls:'s-xtreme', desc:'Xtreme出界'},
+  {id:'custom',  name:'自訂',emoji:'⭐',pts:1,cls:'s-custom', desc:'自訂得分'},
+];
+
+// State
+var S={tab:'players',page:'list',pd:{},players:[],tournaments:[]};
+var CF={name:'',target:4,sel:new Set()};
+var CS={tId:null,mId:null,pName:'',pts:1,note:''};
+
+// Persistence
+function save(){localStorage.setItem('bx_p',JSON.stringify(S.players));localStorage.setItem('bx_t',JSON.stringify(S.tournaments));}
+function load(){try{S.players=JSON.parse(localStorage.getItem('bx_p')||'[]');}catch(e){S.players=[];}try{S.tournaments=JSON.parse(localStorage.getItem('bx_t')||'[]');}catch(e){S.tournaments=[];}}
+
+// Utils
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function shuffle(a){var b=a.slice();for(var i=b.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=b[i];b[i]=b[j];b[j]=t;}return b;}
+function calcAge(bd){var b=new Date(bd),n=new Date(),a=n.getFullYear()-b.getFullYear();if(n<new Date(n.getFullYear(),b.getMonth(),b.getDate()))a--;return a;}
+function fmtD(iso){var d=new Date(iso);return d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日';}
+function fmtDT(iso){var d=new Date(iso),M=d.getMonth()+1,D=d.getDate(),H=d.getHours(),Mi=d.getMinutes();return d.getFullYear()+'/'+(M<10?'0':'')+M+'/'+(D<10?'0':'')+D+' '+(H<10?'0':'')+H+':'+(Mi<10?'0':'')+Mi;}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// Navigation
+function switchTab(tab){S.tab=tab;S.page='list';S.pd={};document.querySelectorAll('.tab').forEach(function(b){b.classList.remove('on');});document.getElementById('tab-'+tab).classList.add('on');render();}
+function nav(page,pd){S.page=page;S.pd=pd||{};render();document.getElementById('main').scrollTop=0;}
+function goBack(){if(S.page==='match')nav('detail',{tId:S.pd.tId});else nav('list');}
+function hdrAction(){if(S.page==='match')undoScore(S.pd.tId,S.pd.mId);}
+
+// Players
+function addPlayer(name,bday){S.players.push({id:uid(),name:name.trim(),birthday:bday,createdAt:new Date().toISOString()});save();render();}
+function editPlayer(id,name,bday){var p=S.players.find(function(p){return p.id===id;});if(p){p.name=name.trim();p.birthday=bday;save();render();}}
+function delPlayer(id){if(!confirm('確定刪除此選手？'))return;S.players=S.players.filter(function(p){return p.id!==id;});save();closeModal();render();}
+
+// Scoring
+function pScore(m,name){return m.scores.filter(function(s){return s.p===name;}).reduce(function(n,s){return n+s.pts;},0);}
+
+// Tournament creation
+function createTournament(name,names,target){
+  var arr=shuffle(names.slice());
+  var t={id:uid(),name:name,createdAt:new Date().toISOString(),status:'ongoing',participants:names.slice(),target:target,matches:[],seed:null,winner:null};
+  if(arr.length%2!==0){var s=arr.shift();t.seed=s;t.matches.push({id:uid(),p1:s,p2:null,round:1,num:0,status:'bye',winner:s,scores:[]});}
+  var n=0;
+  while(arr.length>=2){n++;var p1=arr.shift(),p2=arr.shift();t.matches.push({id:uid(),p1:p1,p2:p2,round:1,num:n,status:'pending',winner:null,scores:[]});}
+  S.tournaments.push(t);save();return t.id;
+}
+
+// Match scoring
+function addScore(tId,mId,pName,reasonId,pts,note){
+  note=note||'';
+  var t=S.tournaments.find(function(t){return t.id===tId;});
+  var m=t&&t.matches.find(function(m){return m.id===mId;});
+  if(!m||m.status==='completed')return;
+  m.scores.push({id:uid(),p:pName,reason:reasonId,pts:pts,note:note,time:new Date().toISOString()});
+  if(m.status==='pending')m.status='ongoing';
+  var s1=pScore(m,m.p1),s2=m.p2?pScore(m,m.p2):0;
+  if(s1>=t.target){m.winner=m.p1;m.status='completed';}
+  else if(m.p2&&s2>=t.target){m.winner=m.p2;m.status='completed';}
+  save();renderMatchContent();
+}
+function undoScore(tId,mId){
+  var t=S.tournaments.find(function(t){return t.id===tId;});
+  var m=t&&t.matches.find(function(m){return m.id===mId;});
+  if(!m||!m.scores.length)return;
+  m.scores.sort(function(a,b){return new Date(a.time)-new Date(b.time);});
+  m.scores.pop();m.winner=null;
+  if(m.status==='completed')m.status=m.scores.length?'ongoing':'pending';
+  save();renderMatchContent();
+}
+
+// Round helpers
+function curRound(t){var active=t.matches.filter(function(m){return m.status==='pending'||m.status==='ongoing';});if(!active.length)return Math.max.apply(null,[0].concat(t.matches.map(function(m){return m.round;})));return Math.min.apply(null,active.map(function(m){return m.round;}));}
+function roundDone(t){var r=curRound(t);return t.matches.filter(function(m){return m.round===r;}).every(function(m){return m.status==='completed'||m.status==='bye';});}
+function byRound(t){var max=Math.max.apply(null,[0].concat(t.matches.map(function(m){return m.round;})));var res={};for(var r=1;r<=max;r++){res[r]=t.matches.filter(function(m){return m.round===r;}).sort(function(a,b){return a.num-b.num;});}return res;}
+function rTitle(r,total){var rem=total-r+1;if(rem===1)return'🏆 决賽';if(rem===2)return'準决賽';if(rem===3)return'8強賽';if(rem===4)return'16強賽';return'第 '+r+' 輪';}
+function advanceRound(tId){
+  var t=S.tournaments.find(function(t){return t.id===tId;});if(!t)return;
+  var cr=curRound(t);
+  var winners=t.matches.filter(function(m){return m.round===cr;}).map(function(m){return m.winner;}).filter(Boolean);
+  if(winners.length===1){t.winner=winners[0];t.status='completed';save();render();return;}
+  var nr=cr+1,adv=shuffle(winners.slice()),n=0;
+  if(adv.length%2!==0){var s=adv.shift();t.matches.push({id:uid(),p1:s,p2:null,round:nr,num:0,status:'bye',winner:s,scores:[]});}
+  while(adv.length>=2){n++;var p1=adv.shift(),p2=adv.shift();t.matches.push({id:uid(),p1:p1,p2:p2,round:nr,num:n,status:'pending',winner:null,scores:[]});}
+  save();render();
+}
+function delTournament(tId){if(!confirm('確定刪除此比賽？'))return;S.tournaments=S.tournaments.filter(function(t){return t.id!==tId;});save();nav('list');}
+
+// Header
+function updateHdr(){
+  var back=document.getElementById('hdr-back'),title=document.getElementById('hdr-title'),right=document.getElementById('hdr-right');
+  if(S.page==='list'){back.style.visibility='hidden';right.style.visibility='hidden';title.textContent=S.tab==='players'?'👥 選手名單':'🏆 比賽列表';}
+  else if(S.page==='detail'){var t=S.tournaments.find(function(t){return t.id===S.pd.tId;});back.style.visibility='visible';right.style.visibility='hidden';title.textContent=t?t.name:'比賽詳情';}
+  else if(S.page==='match'){back.style.visibility='visible';right.style.visibility='visible';right.textContent='↩ 撤銷';title.textContent='⚔️ 比賽中';}
+}
+
+// Main render
+function render(){
+  updateHdr();hideFab();
+  var main=document.getElementById('main');
+  if(S.tab==='players'){renderPlayers(main);return;}
+  if(S.page==='list')renderTList(main);
+  else if(S.page==='detail')renderTDetail(main);
+  else if(S.page==='match'){main.innerHTML='<div id="mc"></div>';renderMatchContent();}
+}
+
+// Players list
+function renderPlayers(main){
+  setFab(openPForm);
+  if(!S.players.length){main.innerHTML='<div class="empty"><div class="em-ic">👥</div><div class="em-t">尚未新增選手</div><div class="em-s">點右下角 + 開始新增</div></div>';return;}
+  main.innerHTML='<input class="search" placeholder="🔍 搜尋選手" oninput="filterP(this.value)"><div class="cl" id="pl">'+renderPItems(S.players)+'</div>';
+}
+function filterP(q){var el=document.getElementById('pl');if(!el)return;el.innerHTML=renderPItems(q?S.players.filter(function(p){return p.name.indexOf(q)>=0;}):S.players);}
+function renderPItems(ps){
+  if(!ps.length)return'<div style="text-align:center;padding:20px;color:var(--text3)">找不到選手</div>';
+  return ps.map(function(p){
+    return'<div class="card"><div class="crow" data-pid="'+esc(p.id)+'" onclick="openPForm(this.dataset.pid)">'+
+      '<div class="av">'+esc(p.name[0])+'</div>'+
+      '<div style="flex:1"><div class="t-h">'+esc(p.name)+'</div><div class="t-s">'+fmtD(p.birthday)+'</div></div>'+
+      '<div class="t-s">'+calcAge(p.birthday)+' 歲</div>'+
+      '<div class="chevron">&rsaquo;</div></div></div>';
+  }).join('');
+}
+
+// Tournament list
+function renderTList(main){
+  setFab(openCT);
+  if(!S.tournaments.length){main.innerHTML='<div class="empty"><div class="em-ic">🏆</div><div class="em-t">尚未建立比賽</div><div class="em-s">點右下角 + 開始建立</div></div>';return;}
+  var sorted=S.tournaments.slice().sort(function(a,b){return new Date(b.createdAt)-new Date(a.createdAt);});
+  main.innerHTML='<div class="cl">'+sorted.map(function(t){
+    var bText=t.status==='upcoming'?'未開始':t.status==='ongoing'?'進行中':'已結束';
+    return'<div class="card"><div class="crow" data-tid="'+esc(t.id)+'" onclick="nav(\'detail\',{tId:this.dataset.tid})">'+
+      '<div class="av">🏙</div>'+
+      '<div style="flex:1"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+
+      '<span class="t-h">'+esc(t.name)+'</span><span class="badge badge-'+t.status+'">'+bText+'</span></div>'+
+      '<div class="t-s">'+t.participants.length+' 位選手'+(t.winner?' · 🏆 '+esc(t.winner):'')+'</div>'+
+      '<div class="t-xs">'+fmtDT(t.createdAt)+'</div></div>'+
+      '<div class="chevron">&rsaquo;</div></div></div>';
+  }).join('')+'</div>';
+}
+
+// Tournament detail
+function renderTDetail(main){
+  var t=S.tournaments.find(function(t){return t.id===S.pd.tId;});
+  if(!t){nav('list');return;}
+  var rounds=byRound(t),rNums=Object.keys(rounds).map(Number).sort(function(a,b){return a-b;}),total=rNums.length;
+  var html='<div>';
+  if(t.winner)html+='<div class="w-banner"><div style="font-size:40px">👑</div><div style="font-size:13px;color:var(--yellow);font-weight:700;margin-top:2px">🏆 冠軍</div><div style="font-size:28px;font-weight:900;margin-top:4px">'+esc(t.winner)+'</div></div>';
+  rNums.forEach(function(r){
+    var ms=rounds[r],done=ms.every(function(m){return m.status==='completed'||m.status==='bye';});
+    html+='<div class="rnd-hdr"><span class="rnd-title">'+rTitle(r,total)+'</span><span class="rnd-badge" style="background:'+(done?'#dcfce7':'#fff7ed')+';color:'+(done?'#15803d':'#c2410c')+'">'+(done?'✓ 完成':'進行中')+'</span></div>';
+    ms.forEach(function(m){
+      var s1=pScore(m,m.p1),s2=m.p2?pScore(m,m.p2):0;
+      var cls=m.status==='ongoing'?'ongoing':m.status==='completed'?'completed':m.status==='bye'?'bye':'';
+      var clickAttr=m.status!=='bye'?'data-tid="'+esc(t.id)+'" data-mid="'+esc(m.id)+'" onclick="nav(\'match\',{tId:this.dataset.tid,mId:this.dataset.mid})"':'';
+      html+='<div class="mc '+cls+'" '+clickAttr+'>'+mcCell(m.p1,s1,m.winner===m.p1,t.target)+
+        '<div class="mc-div">'+(m.status==='bye'?'<span style="font-size:10px;color:var(--text3)">輪空</span>':m.status==='completed'?'<span style="font-size:18px">✅</span>':m.status==='ongoing'?'<span style="font-size:18px">▶️</span>':'<span class="vs">VS</span>')+'</div>'+
+        (m.p2?mcCell(m.p2,s2,m.winner===m.p2,t.target):'<div class="mc-p" style="opacity:.3">—</div>')+'</div>';
+    });
+  });
+  if(t.status==='ongoing'&&roundDone(t))html+='<button class="adv-btn" data-tid="'+esc(t.id)+'" onclick="advanceRound(this.dataset.tid)">進入下一輪 →</button>';
+  html+='<div style="text-align:center;padding:16px 16px 32px"><button class="btn-ghost" data-tid="'+esc(t.id)+'" onclick="delTournament(this.dataset.tid)">🗑 刪除此比賽</button></div></div>';
+  main.innerHTML=html;
+}
+function mcCell(name,score,isWin,target){
+  var dots='';for(var i=0;i<target;i++)dots+='<div class="mc-dot'+(i<score?' on':'')+'"></div>';
+  return'<div class="mc-p"><div class="mc-name">'+esc(name)+'</div><div class="mc-score'+(isWin?' win':'')+'">'+score+'</div><div class="mc-dots">'+dots+'</div></div>';
+}
+
+// Match scoring UI
+function renderMatchContent(){
+  var tId=S.pd.tId,mId=S.pd.mId;
+  var t=S.tournaments.find(function(t){return t.id===tId;});
+  var m=t&&t.matches.find(function(m){return m.id===mId;});
+  var el=document.getElementById('mc');if(!m||!el)return;
+  var s1=pScore(m,m.p1),s2=m.p2?pScore(m,m.p2):0;
+  var right=document.getElementById('hdr-right');
+  if(right)right.style.visibility=(m.scores.length&&m.status!=='completed')?'visible':'hidden';
+  if(m.status==='completed'){
+    el.innerHTML='<div class="result"><div style="font-size:72px">🏆</div><div style="font-size:14px;color:var(--text2)">比賽結束</div><div class="r-win">'+esc(m.winner)+' 獲勝！</div>'+
+      '<div class="r-scores"><div class="rsp"><div class="rsp-n">'+esc(m.p1)+'</div><div class="rsp-s'+(m.winner===m.p1?' win':'')+'">'+s1+'</div></div>'+
+      '<div style="font-size:24px;color:var(--text3)">:</div>'+
+      '<div class="rsp"><div class="rsp-n">'+esc(m.p2||'')+'</div><div class="rsp-s'+(m.winner===m.p2?' win':'')+'">'+s2+'</div></div></div>'+
+      '<button class="btn-p" data-tid="'+esc(tId)+'" onclick="nav(\'detail\',{tId:this.dataset.tid})">確認，返回賽程</button></div>';
+    return;
+  }
+  var sortedH=m.scores.slice().sort(function(a,b){return new Date(b.time)-new Date(a.time);});
+  var hist=sortedH.length?'<div class="hist-sec"><div class="hist-t">得分記錄</div>'+sortedH.map(function(s){var r=REASONS.find(function(r){return r.id===s.reason;})||{emoji:'⭐',desc:s.reason};return'<div class="hi"><span class="hi-em">'+r.emoji+'</span><div class="hi-inf"><div class="hi-pl">'+esc(s.p)+'</div><div class="hi-re">'+esc(s.note||r.desc)+'</div></div><span class="hi-pt">+'+s.pts+'</span></div>';}).join('')+'</div>':'';
+  var btnCol=function(pName){return REASONS.map(function(r){return'<button class="sbtn '+r.cls+'" data-p="'+esc(pName)+'" data-r="'+r.id+'" onclick="hsBtnClick(this)"><span class="sb-em">'+r.emoji+'</span><span class="sb-nm">'+r.name+'</span><span class="sb-pt">+'+r.pts+'</span></button>';}).join('');};
+  el.innerHTML='<div class="ssh"><div class="ssh-p"><div class="ssh-name">'+esc(m.p1)+'</div><div class="ssh-score'+(m.winner===m.p1?' win':'')+'">'+s1+'</div></div>'+
+    '<div class="ssh-mid"><div class="ssh-tl">目標</div><div class="ssh-tv">'+t.target+'</div></div>'+
+    (m.p2?'<div class="ssh-p"><div class="ssh-name">'+esc(m.p2)+'</div><div class="ssh-score'+(m.winner===m.p2?' win':'')+'">'+s2+'</div></div>':'<div style="flex:1"></div>')+
+    '</div><div class="scols"><div class="scol"><div class="scol-name">'+esc(m.p1)+'</div>'+btnCol(m.p1)+'</div>'+
+    (m.p2?'<div class="scol"><div class="scol-name">'+esc(m.p2)+'</div>'+btnCol(m.p2)+'</div>':'')+'</div>'+hist;
+}
+function handleScore(tId,mId,pName,rId,defPts){if(rId==='custom')openCS(tId,mId,pName);else addScore(tId,mId,pName,rId,defPts,'');}
+function hsBtnClick(el){var r=REASONS.find(function(r){return r.id===el.dataset.r;});if(r)handleScore(S.pd.tId,S.pd.mId,el.dataset.p,r.id,r.pts);}
+
+// Player form
+function openPForm(pid){
+  pid=pid||null;
+  var p=pid?S.players.find(function(p){return p.id===pid;}):null;
+  var defBday=(new Date().getFullYear()-12)+'-01-01';
+  var delBtn=p?'<div style="text-align:center;padding:4px 16px 16px"><button class="btn-ghost" data-pid="'+esc(p.id)+'" onclick="delPlayer(this.dataset.pid)">🗑 刪除此選手</button></div>':'<div style="height:20px"></div>';
+  document.getElementById('sheet').innerHTML=
+    '<div class="sh-handle"></div>'+
+    '<div class="sh-hdr"><button class="sh-cancel" onclick="closeModal()">取消</button><span class="sh-title">'+(p?'編輯選手':'新增選手')+'</span>'+
+    '<button class="sh-ok" data-pid="'+(pid?esc(pid):'')+'" onclick="savePForm(this.dataset.pid)">儲存</button></div>'+
+    '<div class="f-sec"><div class="f-lbl">姓名</div><input class="f-inp" id="pf-n" placeholder="選手姓名" value="'+(p?esc(p.name):'')+'" autocomplete="off"></div>'+
+    '<div class="f-sec"><div class="f-lbl">生日</div><input class="f-inp" id="pf-b" type="date" value="'+(p?p.birthday:defBday)+'"></div>'+delBtn;
+  showModal();
+  setTimeout(function(){var n=document.getElementById('pf-n');if(n)n.focus();},300);
+}
+function savePForm(pid){
+  pid=pid||null;
+  if(pid==='')pid=null;
+  var name=document.getElementById('pf-n').value.trim();
+  var bday=document.getElementById('pf-b').value;
+  if(!name){alert('請輸入選手姓名');return;}
+  if(!bday){alert('請選擇生日');return;}
+  if(pid)editPlayer(pid,name,bday);else addPlayer(name,bday);
+  closeModal();
+}
+
+// Create tournament sheet
+function openCT(){CF={name:'',target:4,sel:new Set()};renderCTSheet();showModal();}
+function renderCTSheet(){
+  var ps=S.players,can=CF.sel.size>=2&&CF.name.trim().length>0;
+  var selHtml=!ps.length?'<div style="padding:16px;text-align:center;color:var(--text3)">請先新增選手</div>':
+    '<div class="card">'+ps.map(function(p){
+      return'<div class="psr" data-n="'+esc(p.name)+'" onclick="togSel(this.dataset.n)">'+
+        '<div class="psr-chk'+(CF.sel.has(p.name)?' on':'')+'"></div>'+
+        '<div style="flex:1"><div class="t-h">'+esc(p.name)+'</div><div class="t-s">'+fmtD(p.birthday)+'</div></div>'+
+        '</div>';
+    }).join('')+'</div>';
+  document.getElementById('sheet').innerHTML=
+    '<div class="sh-handle"></div>'+
+    '<div class="sh-hdr"><button class="sh-cancel" onclick="closeModal()">取消</button><span class="sh-title">建立比賽</span>'+
+    '<button class="sh-ok" id="ct-ok" onclick="submitCT()" '+(can?'':'disabled')+'>建立</button></div>'+
+    '<div class="f-sec"><div class="f-lbl">比賽名稱</div><input class="f-inp" id="ct-n" placeholder="例如：2025春季聯賽" value="'+esc(CF.name)+'" oninput="CF.name=this.value;updateCTOk()" autocomplete="off"></div>'+
+    '<div class="f-sec"><div class="f-lbl">先攻得幾分獲勝</div><div class="stepper">'+
+      '<button class="stp-btn" onclick="chgTarget(-1)" '+(CF.target<=1?'disabled':'')+'>−</button>'+
+      '<div class="stp-val">'+CF.target+' 分</div>'+
+      '<button class="stp-btn" onclick="chgTarget(1)" '+(CF.target>=10?'disabled':'')+'>＋</button>'+
+    '</div></div>'+
+    '<div class="f-sec"><div class="f-lbl">參賽選手 '+(CF.sel.size>0?'<span style="color:var(--red);font-weight:700">(已選'+CF.sel.size+'人)</span>':'')+'</div>'+selHtml+'</div>'+
+    (CF.sel.size>=2&&CF.sel.size%2!==0?'<div class="infobox">ℹ️ <span>人數為奇數（'+CF.sel.size+'人），一位種子選手第一輪輪空</span></div>':'')+
+    '<div style="height:20px"></div>';
+}
+function updateCTOk(){var ok=document.getElementById('ct-ok');if(ok)ok.disabled=!(CF.sel.size>=2&&CF.name.trim().length>0);}
+function chgTarget(d){CF.target=Math.min(10,Math.max(1,CF.target+d));renderCTSheet();}
+function togSel(name){if(CF.sel.has(name))CF.sel.delete(name);else CF.sel.add(name);renderCTSheet();}
+function submitCT(){
+  if(CF.sel.size<2){alert('請選擇至少 2 位選手');return;}
+  var tId=createTournament(CF.name.trim()||'新比賽',Array.from(CF.sel),CF.target);
+  closeModal();nav('detail',{tId:tId});
+}
+
+// Custom score sheet
+function openCS(tId,mId,pName){
+  CS={tId:tId,mId:mId,pName:pName,pts:1,note:''};
+  document.getElementById('sheet').innerHTML=
+    '<div class="sh-handle"></div>'+
+    '<div class="sh-hdr"><button class="sh-cancel" onclick="closeModal()">取消</button><span class="sh-title">自訂得分</span><button class="sh-ok" onclick="submitCS()">確認</button></div>'+
+    '<div style="padding:0 18px 12px;font-size:14px;color:var(--text2)">為 <strong>'+esc(pName)+'</strong> 新增自訂得分</div>'+
+    '<div class="f-sec"><div class="f-lbl">說明</div><input class="f-inp" id="cs-n" placeholder="例如：裁判加分" oninput="CS.note=this.value" autocomplete="off"></div>'+
+    '<div class="f-sec"><div class="f-lbl">分數</div><div class="stepper">'+
+      '<button class="stp-btn" id="cs-m" onclick="chgCS(-1)" disabled>−</button>'+
+      '<div class="stp-val" id="cs-v">+ 1 分</div>'+
+      '<button class="stp-btn" id="cs-p" onclick="chgCS(1)">＋</button>'+
+    '</div></div><div style="height:20px"></div>';
+  showModal();
+}
+function chgCS(d){CS.pts=Math.min(10,Math.max(1,CS.pts+d));var v=document.getElementById('cs-v');if(v)v.textContent='+ '+CS.pts+' 分';var m=document.getElementById('cs-m');if(m)m.disabled=CS.pts<=1;var p=document.getElementById('cs-p');if(p)p.disabled=CS.pts>=10;}
+function submitCS(){addScore(CS.tId,CS.mId,CS.pName,'custom',CS.pts,CS.note||'自訂得分');closeModal();}
+
+// Modal
+function showModal(){var o=document.getElementById('overlay');o.style.display='flex';requestAnimationFrame(function(){o.classList.add('on');});}
+function closeModal(){var o=document.getElementById('overlay');o.classList.remove('on');setTimeout(function(){o.style.display='none';},200);}
+function overlayTap(e){if(e.target===document.getElementById('overlay'))closeModal();}
+
+// Boot
+load();
+switchTab('players');
+</script>
+</body>
+</html>
