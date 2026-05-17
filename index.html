@@ -94,7 +94,8 @@ html{height:-webkit-fill-available;}body{height:100%;min-height:-webkit-fill-ava
 .mc-dots{display:flex;gap:3px;justify-content:center;margin-top:3px;}
 .mc-dot{width:6px;height:6px;border-radius:3px;background:var(--border);}
 .mc-dot.on{background:var(--red);}
-.mc-div{width:44px;text-align:center;flex-shrink:0;}
+.mc-div{width:44px;text-align:center;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:2px;}
+.mc-no{font-size:9px;color:var(--text3);font-weight:600;}
 .vs{font-size:11px;font-weight:800;color:var(--text3);}
 .w-banner{margin:16px;padding:22px 20px;border-radius:var(--r);background:linear-gradient(135deg,#fef9c3,#fde68a);border:1.5px solid rgba(202,138,4,.3);text-align:center;}
 .adv-btn{display:flex;align-items:center;justify-content:center;gap:8px;margin:4px 16px 8px;padding:15px;background:var(--red);color:#fff;border:none;border-radius:var(--r);font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(225,29,72,.3);font-family:inherit;}
@@ -606,12 +607,12 @@ function renderRRDetail(main,t){
   // 對戰列表
   var doneCount=t.matches.filter(function(m){return m.status==='completed';}).length;
   html+='<div class="rnd-hdr"><span class="rnd-title">全部對戰</span><span class="rnd-badge" style="background:'+(allDone?'#dcfce7':'#fff7ed')+';color:'+(allDone?'#15803d':'#c2410c')+'">'+doneCount+'/'+t.matches.length+' 完成</span></div>';
-  t.matches.slice().sort(function(a,b){return a.num-b.num;}).forEach(function(m){
+  t.matches.slice().sort(function(a,b){return a.num-b.num;}).forEach(function(m,i){
     var s1=pScore(m,m.p1),s2=pScore(m,m.p2||'');
     var cls=m.status==='ongoing'?'ongoing':m.status==='completed'?'completed':'';
     html+='<div class="mc '+cls+'" data-tid="'+esc(t.id)+'" data-mid="'+esc(m.id)+'" onclick="nav(\'match\',{tId:this.dataset.tid,mId:this.dataset.mid})">'+
       mcCell(m.p1,s1,m.winner===m.p1,t.target)+
-      '<div class="mc-div">'+(m.status==='completed'?'<span style="font-size:18px">✅</span>':m.status==='ongoing'?'<span style="font-size:18px">▶️</span>':'<span class="vs">VS</span>')+'</div>'+
+      '<div class="mc-div"><span class="mc-no">第'+(i+1)+'場</span>'+(m.status==='completed'?'<span style="font-size:18px">✅</span>':m.status==='ongoing'?'<span style="font-size:18px">▶️</span>':'<span class="vs">VS</span>')+'</div>'+
       mcCell(m.p2||'',s2,m.winner===m.p2,t.target)+
       '</div>';
   });
@@ -702,6 +703,7 @@ function renderElimDetail(main,t){
   // 賽程表 SVG
   html+='<div class="rnd-hdr"><span class="rnd-title">🗂 賽程表</span></div>';
   html+=renderBracketSVG(t);
+  var _gn=0;
   rNums.forEach(function(r){
     var ms=rounds[r],done=ms.every(function(m){return m.status==='completed'||m.status==='bye';});
     html+='<div class="rnd-hdr"><span class="rnd-title">'+rTitle(r,total)+'</span><span class="rnd-badge" style="background:'+(done?'#dcfce7':'#fff7ed')+';color:'+(done?'#15803d':'#c2410c')+'">'+(done?'✓ 完成':'進行中')+'</span></div>';
@@ -709,7 +711,9 @@ function renderElimDetail(main,t){
       var s1=pScore(m,m.p1),s2=m.p2?pScore(m,m.p2):0;
       var cls=m.status==='ongoing'?'ongoing':m.status==='completed'?'completed':m.status==='bye'?'bye':'';
       var ca=m.status!=='bye'?'data-tid="'+esc(t.id)+'" data-mid="'+esc(m.id)+'" onclick="nav(\'match\',{tId:this.dataset.tid,mId:this.dataset.mid})"':'';
-      html+='<div class="mc '+cls+'" '+ca+'>'+mcCell(m.p1,s1,m.winner===m.p1,t.target)+'<div class="mc-div">'+(m.status==='bye'?'<span style="font-size:10px;color:var(--text3)">輪空</span>':m.status==='completed'?'<span style="font-size:18px">✅</span>':m.status==='ongoing'?'<span style="font-size:18px">▶️</span>':'<span class="vs">VS</span>')+'</div>'+(m.p2?mcCell(m.p2,s2,m.winner===m.p2,t.target):'<div class="mc-p" style="opacity:.3">—</div>')+'</div>';
+      if(m.status!=='bye')_gn++;
+      var noLabel=m.status!=='bye'?'<span class="mc-no">第'+_gn+'場</span>':'';
+      html+='<div class="mc '+cls+'" '+ca+'>'+mcCell(m.p1,s1,m.winner===m.p1,t.target)+'<div class="mc-div">'+noLabel+(m.status==='bye'?'<span style="font-size:10px;color:var(--text3)">輪空</span>':m.status==='completed'?'<span style="font-size:18px">✅</span>':m.status==='ongoing'?'<span style="font-size:18px">▶️</span>':'<span class="vs">VS</span>')+'</div>'+(m.p2?mcCell(m.p2,s2,m.winner===m.p2,t.target):'<div class="mc-p" style="opacity:.3">—</div>')+'</div>';
     });
   });
   if(t.pendingEntrants&&t.pendingEntrants.length){
