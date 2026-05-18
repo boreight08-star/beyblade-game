@@ -644,7 +644,7 @@ function renderBracketSVG(t){
     var sw=isWin||status==='ongoing'?2:1;
     var tc=isWin?'#15803d':'#1c1c1e';
     var fw=isWin?'700':'500';
-    var disp=name.length>9?name.slice(0,8)+'…':name;
+    var disp=name==null?'待定':(name.length>9?name.slice(0,8)+'…':name);
     var sc=(score!==null&&score!==undefined)?score:'';
     return '<rect x="'+x+'" y="'+y+'" width="'+BW+'" height="'+BH+'" rx="5" fill="'+bg+'" stroke="'+bd+'" stroke-width="'+sw+'"/>'+
       '<text x="'+(x+7)+'" y="'+(y+BH/2+4.5)+'" font-size="11.5" font-family="-apple-system,sans-serif" fill="'+tc+'" font-weight="'+fw+'">'+esc(disp)+(sc!==''?' · '+sc:'')+'</text>';
@@ -728,7 +728,7 @@ function renderElimDetail(main,t){
 
 function mcCell(name,score,isWin,target){
   var dots='';for(var i=0;i<target;i++)dots+='<div class="mc-dot'+(i<score?' on':'')+'"></div>';
-  return'<div class="mc-p"><div class="mc-name">'+esc(name)+'</div><div class="mc-score'+(isWin?' win':'')+'">'+score+'</div><div class="mc-dots">'+dots+'</div></div>';
+  return'<div class="mc-p"><div class="mc-name">'+esc(name==null?'待定':name)+'</div><div class="mc-score'+(isWin?' win':'')+'">'+score+'</div><div class="mc-dots">'+dots+'</div></div>';
 }
 
 // ── Match content ──
